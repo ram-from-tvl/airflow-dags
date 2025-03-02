@@ -1,16 +1,17 @@
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
 from airflow import DAG
+from airflow.operators.latest_only import LatestOnlyOperator
 from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
 
-from airflow.operators.latest_only import LatestOnlyOperator
-from utils.slack import slack_message_callback
+from airflow_dags.plugins.callbacks.slack import slack_message_callback
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     # the start_date needs to be less than the last cron run
-    "start_date": datetime.now(tz=timezone.utc) - timedelta(hours=3),
+    "start_date": datetime.now(tz=UTC) - timedelta(hours=3),
     "retries": 2,
     "retry_delay": timedelta(minutes=1),
     "max_active_runs": 10,

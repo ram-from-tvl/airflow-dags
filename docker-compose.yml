@@ -1,0 +1,23 @@
+name: airflow
+
+services:
+
+  airflow:
+    container_name: airflow-dags
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    post_start:
+      - command: |
+          /usr/bin/dumb-init -- /entrypoint db init && \
+          /usr/bin/dumb-init -- /entrypoint users create \
+            --role Admin --username admin --password admin \
+            --firstname admin --lastname admin --email admin@admin.com
+    command: ["webserver", "-w", "4"]
+    environment:
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+    ports:
+      - "4040:8080"
+

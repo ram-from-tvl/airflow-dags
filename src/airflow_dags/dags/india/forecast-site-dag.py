@@ -1,15 +1,16 @@
 import os
-from datetime import datetime, timedelta, timezone
-from airflow import DAG
-from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
-from utils.slack import slack_message_callback
+from datetime import UTC, datetime, timedelta
 
+from airflow import DAG
 from airflow.operators.latest_only import LatestOnlyOperator
+from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
+
+from airflow_dags.plugins.callbacks.slack import slack_message_callback
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
-    "start_date": datetime.now(tz=timezone.utc) - timedelta(hours=3),
+    "start_date": datetime.now(tz=UTC) - timedelta(hours=3),
     "retries": 1,
     "retry_delay": timedelta(minutes=1),
     "max_active_runs": 10,
@@ -73,7 +74,7 @@ with DAG(
 
 with DAG(
     f"{region}-ad-forecast",
-    schedule_interval=f"0,15,30,45 * * * *",
+    schedule_interval="0,15,30,45 * * * *",
     default_args=default_args,
     concurrency=10,
     max_active_tasks=10,

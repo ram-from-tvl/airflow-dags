@@ -1,61 +1,69 @@
-"""Dag to run the cloudcasting app."""
-
 import datetime as dt
 import os
 
 from airflow import DAG
-from airflow.decorators import dag
+from airflow.operators.latest_only import LatestOnlyOperator
 from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
-from utils.slack import slack_message_callback
 
-env = os.getenv("ENVIRONMENT", "development")
+from airflow_dags.plugins.callbacks.slack import slack_message_callback
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
+    # the start_date needs to be less than the last cron run
+    "start_date": dt.datetime(2025, 2, 1, tzinfo=dt.UTC),
     "retries": 2,
     "retry_delay": dt.timedelta(minutes=1),
     "max_active_runs": 10,
     "concurrency": 10,
     "max_active_tasks": 10,
 }
-default_task_args = {
-    "cluster": f"Nowcasting-{env}",
-    "task_definition": "satellite-consumer",
-    "launch_type": "FARGATE",
-    "task_concurrency": 10,
-    "network_configuration": {
-        "awsvpcConfiguration": {
-            "subnets": [os.getenv("ECS_SUBNET")],
-            "securityGroups": [os.getenv("ECS_SECURITY_GROUP")],
-            "assignPublicIp": "ENABLED",
-        },
-    },
-    "awslogs_group": "/aws/ecs/forecast/cloudcasting",
-    "awslogs_stream_prefix": "streaming/cloudcasting",
-    "awslogs_region": "eu-west-1",
-}
 
-@dag(
-    "uk-cloudcasting",
-    description=__doc__,
-    schedule_interval="20,50 * * * *",
-    start_date=dt.datetime(2025, 2, 1, tzinfo=dt.UTC),
-    catchup=False,
-    default_args=default_args,
+env = os.getenv("ENVIRONMENT", "development")
+subnet = os.getenv("ECS_SUBNET")
+security_group = os.getenv("ECS_SECURITY_GROUP")
+cluster = f"Nowcasting-{env}"
+
+cloudcasting_error_message = (
+    "⚠️ The task {{ ti.task_id }} failed,"
+    " but its ok. The cloudcasting is currently not critical. "
+    "No out of hours support is required."
 )
-def cloudcasting_dag() -> DAG:
-    """Dag to run the cloudcasting app."""
-    EcsRunTaskOperator(
-        task_id="uk-cloudcasting",
+
+# Tasks can still be defined in terraform, or defined here
+
+region = "uk"
+
+with DAG(
+    f"{region}-cloudcasting",
+    schedule_interval="20,50 * * * *",
+    default_args=default_args,
+    concurrency=10,
+    max_active_tasks=10,
+) as dag:
+    dag.doc_md = "Run Cloudcasting app"
+
+    latest_only = LatestOnlyOperator(task_id="latest_only")
+
+    cloudcasting_forecast = EcsRunTaskOperator(
+        task_id=f"{region}-cloudcasting",
         task_definition="cloudcasting",
-        on_failure_callback=slack_message_callback(
-            "⚠️ The task {{ ti.task_id }} failed,"
-            " but its ok. The cloudcasting is currently not critical. "
-            "No out of hours support is required.",
-        ),
-        **default_task_args,
+        cluster=cluster,
+        overrides={},
+        launch_type="FARGATE",
+        network_configuration={
+            "awsvpcConfiguration": {
+                "subnets": [subnet],
+                "securityGroups": [security_group],
+                "assignPublicIp": "ENABLED",
+            },
+        },
+        task_concurrency=10,
+        on_failure_callback=slack_message_callback(cloudcasting_error_message),
+        awslogs_group="/aws/ecs/forecast/cloudcasting",
+        awslogs_stream_prefix="streaming/cloudcasting-forecast",
+        awslogs_region="eu-west-1",
     )
 
-cloudcasting_dag()
+    latest_only >> cloudcasting_forecast
 

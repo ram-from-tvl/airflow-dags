@@ -4,7 +4,7 @@ from airflow import DAG
 from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
 
 from airflow.operators.latest_only import LatestOnlyOperator
-from utils.slack import slack_message_callback
+from airflow_dags.plugins.callbacks.slack import slack_message_callback
 
 default_args = {
     "owner": "airflow",

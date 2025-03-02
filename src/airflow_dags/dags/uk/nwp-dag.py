@@ -1,17 +1,18 @@
 import os
-from datetime import datetime, timedelta, timezone
-from airflow import DAG
-from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
-from airflow.operators.bash import BashOperator
+from datetime import UTC, datetime, timedelta
 
+from airflow import DAG
+from airflow.operators.bash import BashOperator
 from airflow.operators.latest_only import LatestOnlyOperator
-from utils.slack import slack_message_callback
-from utils.s3 import determine_latest_zarr
+from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
+
+from airflow_dags.plugins.callbacks.slack import slack_message_callback
+from airflow_dags.plugins.scripts.s3 import determine_latest_zarr
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
-    "start_date": datetime.now(tz=timezone.utc) - timedelta(hours=0.5),
+    "start_date": datetime.now(tz=UTC) - timedelta(hours=0.5),
     "retries": 1,
     "retry_delay": timedelta(minutes=1),
     "max_active_runs": 1,

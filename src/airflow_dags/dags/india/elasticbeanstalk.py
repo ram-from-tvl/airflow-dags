@@ -1,17 +1,18 @@
-""" Dags to rotate ec2 machine in elastic beanstalk """
+"""Dags to rotate ec2 machine in elastic beanstalk"""
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.latest_only import LatestOnlyOperator
 from airflow.operators.python import PythonOperator
-from utils.elastic_beanstalk import scale_elastic_beanstalk_instance
-from utils.slack import slack_message_callback_no_action_required
+
+from airflow_dags.plugins.callbacks.slack import slack_message_callback_no_action_required
+from airflow_dags.plugins.scripts.elastic_beanstalk import scale_elastic_beanstalk_instance
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
-    "start_date": datetime.now(tz=timezone.utc) - timedelta(days=60),
+    "start_date": datetime.now(tz=UTC) - timedelta(days=60),
     "retries": 1,
     "retry_delay": timedelta(minutes=1),
     "max_active_runs": 10,

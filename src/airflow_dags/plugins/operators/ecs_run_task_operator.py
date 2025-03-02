@@ -17,6 +17,7 @@ SENTRY_DSN: str = os.getenv("SENTRY_DSN", "")
 AWS_ACCOUNT_ID: str = os.getenv("AWS_ACCOUNT_ID", "")
 ECS_SUBNET: str = os.getenv("ECS_SUBNET", "")
 ECS_SECURITY_GROUP: str = os.getenv("ECS_SECURITY_GROUP", "")
+AWS_REGION: str = os.getenv("AWS_REGION", "eu-west-1")
 
 @dataclasses.dataclass
 class ECSOperatorGen:
@@ -42,7 +43,7 @@ class ECSOperatorGen:
     """The domain of the container."""
 
     _default_env: ClassVar[dict[str, str]] = {
-        "AWS_REGION": region,
+        "AWS_REGION": AWS_REGION,
         "SENTRY_DSN": SENTRY_DSN,
         "ENVIRONMENT": ENV,
     }
@@ -126,7 +127,7 @@ class ECSOperatorGen:
         env_overrides: dict[str, str] | None = None,
         command_override: list[str] | None = None,
         on_failure_callback: Callable | None = None,
-        trigger_rule: TriggerRule | None = None,
+        trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
     ) -> EcsRunTaskOperator:
         """Create an Airflow operator to run an ECS task."""
         overrides_dict: dict[str, Any] = {"name": self.name}

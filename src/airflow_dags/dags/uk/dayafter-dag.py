@@ -1,10 +1,10 @@
+import os
 from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
-import os
-from utils.slack import slack_message_callback
 
-from airflow.operators.latest_only import LatestOnlyOperator
+from airflow_dags.plugins.callbacks.slack import slack_message_callback
 
 # note that the start_date needs to be slightly more than how often it gets run
 default_args = {

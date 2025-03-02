@@ -1,12 +1,13 @@
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
 from airflow import DAG
-from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
 from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
-
 from airflow.operators.latest_only import LatestOnlyOperator
-from utils.slack import on_failure_callback, slack_message_callback
+from airflow.providers.amazon.aws.operators.ecs import EcsRunTaskOperator
+
+from airflow_dags.plugins.callbacks.slack import slack_message_callback
 
 default_args = {
     "owner": "airflow",
@@ -34,7 +35,7 @@ satellite_error_message = (
 )
 
 satellite_both_files_missing_error_message = (
-    "⚠️ Tried to update the database to show when the latest satellite data was collected, " 
+    "⚠️ Tried to update the database to show when the latest satellite data was collected, "
     "but could not find the 5-min or the 15-min satellite files."
 )
 
@@ -58,7 +59,7 @@ with DAG(
     default_args=default_args,
     concurrency=10,
     max_active_tasks=10,
-    start_date=datetime.now(tz=timezone.utc) - timedelta(hours=0.5),
+    start_date=datetime.now(tz=UTC) - timedelta(hours=0.5),
     catchup=False,
 ) as dag:
     dag.doc_md = "Get Satellite data"
@@ -117,7 +118,7 @@ with DAG(
     default_args=default_args,
     concurrency=10,
     max_active_tasks=10,
-    start_date=datetime.now(tz=timezone.utc) - timedelta(hours=7),
+    start_date=datetime.now(tz=UTC) - timedelta(hours=7),
     catchup=False,
 ) as dag_cleanup:
     dag_cleanup.doc_md = "Satellite data clean up"
