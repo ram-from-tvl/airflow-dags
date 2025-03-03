@@ -15,13 +15,13 @@ on:
 
 jobs:
   deploy-dags:
-    runs-on: ubuntu:latest
-    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.deploy_target }}
     strategy:
       matrix:
-        domain: [ "uk", "india" ]
+        domain: [ "uk" ]
     env:
-      BUCKET_NAME: "${{ matrix.domain }}-${{ inputs.environment }}-eb-airflow"
+      BUCKET_NAME: "${{ matrix.domain }}-${{ inputs.deploy_target }}-eb-airflow"
       DOMAIN: ${{ matrix.domain }}
       REGION: "${{ matrix.domain == 'india' && 'ap-south-1' || 'eu-west-1' }}"
 
