@@ -1,0 +1,59 @@
+name: Deploy DAGs
+run-name: Deploy ${{ inputs.tag }} to ${{ inputs.deploy_target }} by @${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        required: true
+        description: 'The target environment to deploy to'
+        type: choice
+        options: ['development', 'production']
+      tag:
+        required: true
+        description: The repo tag to deploy
+  workflow_call:
+    inputs:
+      deploy_target:
+        description: 'The target environment to deploy to'
+        required: true
+        type: string
+      tag:
+        description: The repo tag to deploy
+        required: true
+        type: string
+
+jobs:
+  deploy-dags:
+    runs-on: ubuntu:latest
+    environment: ${{ inputs.environment }}
+    strategy:
+      matrix:
+        domain: [ "uk", "india" ]
+    env:
+      BUCKET_NAME: "${{ matrix.domain }}-${{ inputs.environment }}-eb-airflow"
+      DOMAIN: ${{ matrix.domain }}
+      REGION: "${{ matrix.domain == 'india' && 'ap-south-1' || 'eu-west-1' }}"
+
+    steps:
+      - name: Checkout required tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Set AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets[vars.KEY__AWS_ACCESS_KEY_ID] }}
+          aws-secret-access-key: ${{ secrets[vars.KEY__AWS_SECRET_ACCESS_KEY] }}
+          aws-region: ${{ env.REGION }}
+
+      - name: Create domain .airflowignore file
+        run: |
+          echo */ >> src/airflow_dags/.airflowignore
+          echo !airflow_dags/dags/${DOMAIN} >> src/airflow_dags/.airflowignore
+          cat src/airflow_dags/.airflowignore
+
+      - name: Deploy to S3 dagbag
+        run: aws s3 sync src/airflow_dags s3://$BUCKET_NAME/dags/airflow_dags --delete
+
