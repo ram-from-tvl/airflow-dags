@@ -47,3 +47,12 @@ jobs:
       - name: Deploy to S3 dagbag
         run: aws s3 sync src/airflow_dags s3://$BUCKET_NAME/dags/airflow_dags --delete
 
+  # This job prevents GitHub from thinking that the matrix jobs outweigh each other
+  # in the overall deployment status
+  deployment-status:
+    needs: [deploy-dags]
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.deploy_target }}
+    steps:
+      - name: Deployment Completed
+        run: echo "Successfully deployed ${{ inputs.tag }} to ${{ inputs.deploy_target }} by @${{ github.actor }}"
