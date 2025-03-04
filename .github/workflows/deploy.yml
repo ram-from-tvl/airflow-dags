@@ -19,7 +19,7 @@ jobs:
     environment: ${{ inputs.deploy_target }}
     strategy:
       matrix:
-        domain: [ "uk" ]
+        domain: [ "uk", "india" ]
     env:
       BUCKET_NAME: "${{ matrix.domain }}-${{ inputs.deploy_target }}-eb-airflow"
       DOMAIN: ${{ matrix.domain }}
