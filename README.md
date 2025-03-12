@@ -14,6 +14,10 @@
 > repository. Commit history and authorship has not been preserved,
 > so for previous iterations of the DAGs, see the original repository's history.
 
+Many of OCF's production services run as batch pipelines managed by an Airflow deployment.
+This repo defines those airflow DAGs that configure, version control, and test these pipelines,
+and handles the deployment process.
+
 
 ## Installation
 
@@ -41,7 +45,18 @@ TODO
 
 ### Can I change the name of a DAG?
 
-Try to avoid it! The DAG name is how airflow identifies the DAG in the database. If you change the name of a DAG, airflow will treat it as a new DAG. This means that the old DAG will still be in the database, but it will not be updated or run. 
+Try to avoid it! The DAG name is how airflow identifies the DAG in the database.
+If you change the name of a DAG, airflow will treat it as a new DAG.
+This means that the old DAG will still be in the database, but it will not be updated or run. 
+
+### Why move this here from ocf-infrastructure?
+
+Because service running configuration isn't terraform configuration!
+Terraform is usually used for setting up infrastructure - platform level resources like databases, networks, and VMs, and, Airflow itself.
+The DAGs that airflow runs, and the versions of the services that those DAGs run, are implementation details,
+and so should be stored in the config-as-code repository for airflow.
+
+Furthermore, as a mostly Python organisation, having a top-level python only repo for Airflow increases it's accessibility to the wider team.  
 
 ## Development
 
