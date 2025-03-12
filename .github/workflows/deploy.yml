@@ -28,7 +28,9 @@ on:
 jobs:
   deploy-dags:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.deploy_target }}
+    environment:
+      name: ${{ inputs.deploy_target }}
+      url: ${{ inputs.tag }}
     strategy:
       matrix:
         domain: [ "uk", "india" ]
