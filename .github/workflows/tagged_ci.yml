@@ -1,5 +1,5 @@
 name: SemVer Tag Created CI
-run-name: Deploy ${{ github.ref_name }} to development by ${{ github.actor }}
+run-name: 'Deploy ${{ github.ref_name }} to development by ${{ github.actor }}'
 
 on:
   push:

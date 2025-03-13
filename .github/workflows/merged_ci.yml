@@ -1,5 +1,5 @@
 name: Merged CI
-run-name: 'Merged CI for #${{ github.event.number }}: ${{ github.event.pull_request.title }}'
+run-name: 'Bump tag with merge #${{ github.event.number }} "${{ github.event.pull_request.title }}"'
 
 on:
   pull_request:
