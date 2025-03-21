@@ -105,6 +105,10 @@ with DAG(
         task_id="determine_latest_zarr_ecmwf",
     )(bucket=f"nowcasting-nwp-{env}", prefix="ecmwf/data")
 
+    rename_zarr_ukv = determine_latest_zarr.override(
+        task_id="determine_latest_zarr_ukv",
+    )(bucket=f"nowcasting-nwp-{env}", prefix="data-metoffice")
+
     file = f"s3://nowcasting-nwp-{env}/data-metoffice/latest.zarr/.zattrs"
     command = f'curl -X GET "{url}/v0/solar/GB/update_last_data?component=nwp&file={file}"'
     nwp_update_ukv = BashOperator(
@@ -119,5 +123,5 @@ with DAG(
         bash_command=command,
     )
 
-    latest_only >> nwp_national_consumer >> nwp_update_ukv
+    latest_only >> nwp_national_consumer >> rename_zarr_ukv >> nwp_update_ukv
     latest_only >> nwp_ecmwf_consumer >> rename_zarr_ecmwf >> nwp_update_ecmwf
