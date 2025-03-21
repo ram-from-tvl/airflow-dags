@@ -193,7 +193,7 @@ class ECSOperatorGen:
             ],
         }
         if self.container_storage > 20:
-            output["ephemeralStorage"] = {"sizeInGiB": self.container_storage},
+            output["ephemeralStorage"] = {"sizeInGiB": self.container_storage}
 
         return output
 
