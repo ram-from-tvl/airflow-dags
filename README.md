@@ -39,7 +39,11 @@ repository.
 
 ## Documentation
 
-TODO
+DAGs are defined in the `dags` folder, split into modules according to domain.
+Each domain corresponds to a seperate deployment of airflow, and as such,
+a distinct set of DAGs, hence some similarity or even duplication is expected. 
+
+Functions, or custom operators, are found in the `plugins` folder.
 
 ## FAQ
 
