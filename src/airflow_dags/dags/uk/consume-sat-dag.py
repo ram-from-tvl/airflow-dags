@@ -11,7 +11,6 @@ import os
 from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
 from airflow.operators.latest_only import LatestOnlyOperator
-from airflow.utils.trigger_rule import TriggerRule
 
 from airflow_dags.plugins.callbacks.slack import slack_message_callback
 from airflow_dags.plugins.operators.ecs_run_task_operator import (
@@ -118,38 +117,38 @@ def sat_consumer_dag() -> None:
     update_5min_op = update_operator(cadence_mins=5)
     update_15min_op = update_operator(cadence_mins=15)
 
-    consume_rss_op = EcsAutoRegisterRunTaskOperator( # noqa
-       airflow_task_id="consume-rss",
-        container_def=sat_consumer,
-        env_overrides={
-            "SATCONS_TIME": "{{" \
-            + "(data_interval_start - macros.timedelta(minutes=210))" \
-            + ".strftime('%Y-%m-%dT%H:%M')" \
-            + "}}",
-            "SATCONS_WORKDIR": f"s3://nowcasting-sat-{env}/testdata/rss",
-        },
-    )
-    consume_iodc_op = EcsAutoRegisterRunTaskOperator( # noqa
-       airflow_task_id="consume-odegree",
-        container_def=sat_consumer,
-        trigger_rule=TriggerRule.ALL_FAILED, # Only run if rss fails
-        env_overrides={
-            "SATCONS_SATELLITE": "odegree",
-            "SATCONS_TIME": "{{" \
-                + "(data_interval_start - macros.timedelta(minutes=210))" \
-                + ".strftime('%Y-%m-%dT%H:%M')" \
-                + "}}",
-            "SATCONS_WORKDIR": f"s3://nowcasting-sat-{env}/testdata/iodc",
-        },
-        on_failure_callback=slack_message_callback(
-            "⚠️ The task {{ ti.task_id }} failed to collect odegree satellite data. "
-            "The forecast will automatically move over to PVNET-ECMWF "
-            "which doesn't need satellite data. "
-            "Forecast quality may be impacted, "
-            "but no out-of-hours support is required. "
-            "Please log in an incident log. ",
-        ),
-    )
+    # consume_rss_op = EcsAutoRegisterRunTaskOperator(
+    #    airflow_task_id="consume-rss",
+    #     container_def=sat_consumer,
+    #     env_overrides={
+    #         "SATCONS_TIME": "{{" \
+    #         + "(data_interval_start - macros.timedelta(minutes=210))" \
+    #         + ".strftime('%Y-%m-%dT%H:%M')" \
+    #         + "}}",
+    #         "SATCONS_WORKDIR": f"s3://nowcasting-sat-{env}/testdata/rss",
+    #     },
+    # )
+    # consume_iodc_op = EcsAutoRegisterRunTaskOperator(
+    #    airflow_task_id="consume-odegree",
+    #     container_def=sat_consumer,
+    #     trigger_rule=TriggerRule.ALL_FAILED, # Only run if rss fails
+    #     env_overrides={
+    #         "SATCONS_SATELLITE": "odegree",
+    #         "SATCONS_TIME": "{{" \
+    #             + "(data_interval_start - macros.timedelta(minutes=210))" \
+    #             + ".strftime('%Y-%m-%dT%H:%M')" \
+    #             + "}}",
+    #         "SATCONS_WORKDIR": f"s3://nowcasting-sat-{env}/testdata/iodc",
+    #     },
+    #     on_failure_callback=slack_message_callback(
+    #         "⚠️ The task {{ ti.task_id }} failed to collect odegree satellite data. "
+    #         "The forecast will automatically move over to PVNET-ECMWF "
+    #         "which doesn't need satellite data. "
+    #         "Forecast quality may be impacted, "
+    #         "but no out-of-hours support is required. "
+    #         "Please log in an incident log. ",
+    #     ),
+    # )
 
     latest_only_op >> satip_consume >> update_5min_op >> update_15min_op
     # latest_only_op >> consume_rss_op >> consume_iodc_op
