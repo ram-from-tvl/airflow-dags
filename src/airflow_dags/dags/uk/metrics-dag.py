@@ -27,7 +27,7 @@ default_args = {
 metrics_calculator = ContainerDefinition(
     name="metrics",
     container_image="docker.io/openclimatefix/nowcasting_metrics",
-    container_tag="1.2.22",
+    container_tag="1.2.23",
     container_env={
         "USE_PVNET_GSP_SUM": "true",
         "LOGLEVEL": "DEBUG",
@@ -42,17 +42,23 @@ metrics_calculator = ContainerDefinition(
 
 @dag(
     dag_id="uk-analysis-metrics",
-    description=__doc__,
-    schedule="0 21 * * *",
+    description="DAG to calculate metrics from the forecast.",
+    schedule="0 21 * * *",  # 21:00 UTC
     start_date=dt.datetime(2025, 3, 1, tzinfo=dt.UTC),
     catchup=False,
     default_args=default_args,
 )
 def metrics_dag() -> None:
-    """Dag to calculate metrics for the day before's forecasts."""
+    """Run the metrics DAG."""
     EcsAutoRegisterRunTaskOperator(
         airflow_task_id="calculate-metrics",
         container_def=metrics_calculator,
+        env_overrides={
+            "USE_PVNET_GSP_SUM": "true",
+            "RUN_METRICS": "true",  # Explicitly enable metrics
+            "RUN_ME": "false",  # Disable ME calculations
+            "LOGLEVEL": "DEBUG",
+        },
         on_failure_callback=slack_message_callback(
             "⚠️ The task {{ ti.task_id }} failed,"
             " but its ok. This task is not critical for live services. "
@@ -60,4 +66,34 @@ def metrics_dag() -> None:
         ),
     )
 
+
+@dag(
+    dag_id="uk-analysis-metrics-me",
+    description="DAG to run ME calculations for the adjuster.",
+    schedule="0 20 * * *",  # 20:00 UTC (1 hour earlier)
+    start_date=dt.datetime(2025, 3, 1, tzinfo=dt.UTC),
+    catchup=False,
+    default_args=default_args,
+)
+def me_dag() -> None:
+    """Run the ME DAG, used by the adjuster."""
+    EcsAutoRegisterRunTaskOperator(
+        airflow_task_id="calculate-metrics-me",
+        container_def=metrics_calculator,
+        env_overrides={
+            "USE_PVNET_GSP_SUM": "true",
+            "RUN_METRICS": "false",  # Disable metrics
+            "RUN_ME": "true",  # Enable ME calculations
+            "LOGLEVEL": "DEBUG",
+        },
+        on_failure_callback=slack_message_callback(
+            "⚠️ The task {{ ti.task_id }} failed,"
+            " but its ok. This task is not critical for live services. "
+            "No out of hours support is required.",
+        ),
+    )
+
+
+# Register both DAGs
 metrics_dag()
+me_dag()
