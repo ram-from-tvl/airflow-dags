@@ -31,14 +31,29 @@ default_args = {
     "max_active_tasks": 10,
 }
 
-pvlive_consumer = ContainerDefinition(
+pvlive_consumer_old = ContainerDefinition(
     name="pvlive-consumer",
     container_image="docker.io/openclimatefix/pvliveconsumer",
     container_tag="1.2.6",
     container_env={
         "LOGLEVEL": "DEBUG",
         "PVLIVE_DOMAIN_URL": "api.solar.sheffield.ac.uk",
-        # api.pvlive.uk" is the new one, api.solar.sheffield.ac.uk is the old one
+    },
+    container_secret_env={
+        f"{env}/rds/forecast/": ["DB_URL"],
+    },
+    domain="uk",
+    container_cpu=256,
+    container_memory=512,
+)
+
+pvlive_consumer = ContainerDefinition(
+    name="pvlive-consumer",
+    container_image="docker.io/openclimatefix/pvliveconsumer",
+    container_tag="1.3.0",
+    container_env={
+        "LOGLEVEL": "DEBUG",
+        "PVLIVE_DOMAIN_URL": "api.pvlive.uk",
     },
     container_secret_env={
         f"{env}/rds/forecast/": ["DB_URL"],
@@ -63,6 +78,23 @@ def pvlive_intraday_consumer_dag() -> None:
         airflow_task_id="pvlive-intraday-consumer-gsps",
         container_def=pvlive_consumer,
         env_overrides={
+            "N_GSPS": "342",
+            "REGIME": "in-day",
+        },
+        on_failure_callback=slack_message_callback(
+            "⚠️ The task {{ ti.task_id }} failed. "
+            "This is needed for the adjuster in the Forecast."
+            "No out of office hours support needed."
+            "Its good to check <https://www.solar.sheffield.ac.uk/pvlive/|PV Live> "
+            "to see if its working. ",
+        ),
+    )
+
+    # we do want to remove this
+    consume_pvlive_gsps_old = EcsAutoRegisterRunTaskOperator(
+        airflow_task_id="pvlive-intraday-consumer-gsps-old",
+        container_def=pvlive_consumer_old,
+        env_overrides={
             "N_GSPS": "317",
             "REGIME": "in-day",
         },
@@ -80,8 +112,7 @@ def pvlive_intraday_consumer_dag() -> None:
         bash_command=f"curl -X GET {url}/v0/solar/GB/update_last_data?component=gsp",
     )
 
-    consume_pvlive_gsps >> update_api_last_gsp_data
-
+    consume_pvlive_gsps >> update_api_last_gsp_data >> consume_pvlive_gsps_old
 
 @dag(
     dag_id="uk-consume-pvlive-dayafter",
@@ -114,13 +145,23 @@ def pvlive_dayafter_consumer_dag() -> None:
         airflow_task_id="consume-pvlive-dayafter-gsps",
         container_def=pvlive_consumer,
         env_overrides={
+            "N_GSPS": "342",
+            "REGIME": "day-after",
+        },
+        on_failure_callback=slack_message_callback(error_message),
+    )
+
+    consume_pvlive_gsps_old = EcsAutoRegisterRunTaskOperator(
+        airflow_task_id="consume-pvlive-dayafter-gsps-old",
+        container_def=pvlive_consumer_old,
+        env_overrides={
             "N_GSPS": "317",
             "REGIME": "day-after",
         },
         on_failure_callback=slack_message_callback(error_message),
     )
 
-    consume_pvlive_national >> consume_pvlive_gsps
+    consume_pvlive_national >> consume_pvlive_gsps >> consume_pvlive_gsps_old
 
 
 pvlive_intraday_consumer_dag()
