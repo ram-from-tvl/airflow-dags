@@ -28,7 +28,7 @@ default_args = {
 site_forecaster = ContainerDefinition(
     name="forecast-site-nl",
     container_image="ghcr.io/openclimatefix/site-forecast-app",
-    container_tag="1.1.7",
+    container_tag="1.1.10",
     container_env={
         "NWP_ECMWF_ZARR_PATH": f"s3://nowcasting-nwp-{env}/ecmwf-nl/data/latest.zarr",
         "SATELLITE_ZARR_PATH": f"s3://nowcasting-sat-{env}/data/latest/latest.zarr.zip",
@@ -60,7 +60,9 @@ def nl_forecast_dag() -> None:
         container_def=site_forecaster,
         max_active_tis_per_dag=10,
         env_overrides={
-            # "SAVE_BATCHES_DIR": f"s3://uk-national-forecaster-models-{env}/site_pvnet_batches",
+            # TODO change bucket name from uk to eu
+            # https://github.com/openclimatefix/ocf-infrastructure/issues/887
+            "SAVE_BATCHES_DIR": f"s3://uk-national-forecaster-models-{env}/nl_pvnet_batches",
         },
         on_failure_callback=slack_message_callback(
             f"⚠️🇳🇱 The {get_task_link()} failed. "
