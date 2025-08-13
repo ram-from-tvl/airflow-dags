@@ -28,10 +28,11 @@ default_args = {
 site_forecaster = ContainerDefinition(
     name="forecast-site-nl",
     container_image="ghcr.io/openclimatefix/site-forecast-app",
-    container_tag="1.1.10",
+    container_tag="1.1.11",
     container_env={
         "NWP_ECMWF_ZARR_PATH": f"s3://nowcasting-nwp-{env}/ecmwf-nl/data/latest.zarr",
         "SATELLITE_ZARR_PATH": f"s3://nowcasting-sat-{env}/data/latest/latest.zarr.zip",
+        "SATELLITE_BACKUP_ZARR_PATH": f"s3://nowcasting-sat-{env}/data/latest/latest_15.zarr.zip",
     },
     container_secret_env={
         f"{env}/rds/pvsite": ["DB_URL"],
