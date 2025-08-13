@@ -34,7 +34,7 @@ default_args = {
 pvlive_consumer = ContainerDefinition(
     name="pvlive-consumer",
     container_image="docker.io/openclimatefix/pvliveconsumer",
-    container_tag="1.3.0",
+    container_tag="1.3.1",
     container_env={
         "LOGLEVEL": "DEBUG",
         "PVLIVE_DOMAIN_URL": "api.pvlive.uk",
@@ -64,6 +64,7 @@ def pvlive_intraday_consumer_dag() -> None:
         env_overrides={
             "N_GSPS": "342",
             "REGIME": "in-day",
+            "BACKFILL_HOURS": "12",
         },
         on_failure_callback=slack_message_callback(
             f"⚠️🇬🇧 The {get_task_link()} failed. "
