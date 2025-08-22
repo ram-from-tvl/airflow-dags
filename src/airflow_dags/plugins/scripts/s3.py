@@ -95,10 +95,6 @@ def extract_latest_zarr(bucket: str, prefix: str, window_mins: int, cadence_mins
 
     # make sure area attrs are yaml string
     if "area" in dataset.data.attrs and isinstance(dataset.data.attrs["area"], dict):
-        s3hook.log.warning(
-            "Converting area attribute to YAML string, "
-            "we should do this in the satellite consumer.",
-        )
         dataset.data.attrs["area"] = yaml.dump(dataset.data.attrs["area"])
 
     with tempfile.NamedTemporaryFile(mode="wt", suffix=".zarr.zip") as tmpf:
