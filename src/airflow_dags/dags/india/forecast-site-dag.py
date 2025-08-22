@@ -46,11 +46,11 @@ india_forecaster = ContainerDefinition(
 ad_forecaster = ContainerDefinition(
     name="forecast-ad",
     container_image="ghcr.io/openclimatefix/site-forecast-app",
-    container_tag="1.1.10",
+    container_tag="1.1.16",
     container_env={
         "NWP_MO_GLOBAL_ZARR_PATH": f"s3://india-nwp-{env}/metoffice/data/latest.zarr",
         "NWP_ECMWF_ZARR_PATH": f"s3://india-nwp-{env}/ecmwf/data/latest.zarr",
-        "SATELLITE_ZARR_PATH": f"s3://india-satellite-{env}/data/latest/iodc_latest.zarr.zip",
+        "SATELLITE_ZARR_PATH": f"s3://india-satellite-{env}/iodc/data/latest.zarr.zip",
         "CLIENT_NAME": "ad",
         "COUNTRY": "india",
     },
@@ -112,7 +112,8 @@ def ad_forecast_dag() -> None:
         env_overrides={
             "CLIENT_NAME": "ad",
             "USE_SATELLITE": "True",
-            "SATELLITE_ZARR_PATH": f"s3://india-satellite-{env}/data/latest/iodc_latest.zarr.zip",
+            # TODO check if this is acyually used
+            "SATELLITE_ZARR_PATH": f"s3://india-satellite-{env}/iodc/data/latest.zarr.zip",
             "SAVE_BATCHES_DIR": f"s3://india-forecast-{env}/ad",
         },
         on_failure_callback=slack_message_callback(
