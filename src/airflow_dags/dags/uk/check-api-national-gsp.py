@@ -433,10 +433,7 @@ def api_national_gsp_check() -> None:
         task_id="check-api-national-forecast-quantiles-order",
         python_callable=check_national_forecast_quantiles_order,
         op_kwargs={"access_token": access_token_str},
-        on_failure_callback=slack_message_callback(
-            "⚠️🇬🇧 National forecast quantiles are not in correct order! "
-            "This may affect probabilistic forecast accuracy. Please check the API response.",
-        ),
+    
     )
 
     gsp_forecast_all = PythonOperator(
