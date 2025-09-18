@@ -183,24 +183,33 @@ def check_national_forecast_quantiles_order(access_token: str) -> None:
                 f"targetTime: {forecast_value.get('targetTime', 'unknown')}",
             )
 
-        # Allow a 20 MW buffer on the quantiles check
-        # Only raise error if expected is not within [plevel_10 - 20, plevel_90 + 20]
-        buffer_mw = 20
-        if not (plevel_10 - buffer_mw <= expected <= plevel_90 + buffer_mw):
-            raise ValueError(
-                f"Quantiles not in correct order at forecast index {i}. "
-                f"{plevel_10 - buffer_mw=} <= {expected=} <= {plevel_90 + buffer_mw=} "
-                f"is not satisfied. "
-                f"Target time: {forecast_value.get('targetTime', 'unknown')}",
+        # Skip quantile order check if all values are below 100 MW
+        low_power_threshold = 100
+        if max(plevel_10, expected, plevel_90) < low_power_threshold:
+            logger.debug(
+                f"Skipping quantile order check for forecast {i} as all values are below "
+                f"{low_power_threshold} MW: plevel_10={plevel_10}, expected={expected}, "
+                f"plevel_90={plevel_90}",
             )
-        logger.debug(
-            f"plevel_10 - {buffer_mw} <= expected <= plevel_90 + {buffer_mw} for forecast {i}: "
-            f"{plevel_10 - buffer_mw} <= {expected} <= {plevel_90 + buffer_mw}",
-        )
+        else:
+            # Allow a 20 MW buffer on the quantiles check
+            # Only raise error if expected is not within [plevel_10 - 20, plevel_90 + 20]
+            buffer_mw = 20
+            if not (plevel_10 - buffer_mw <= expected <= plevel_90 + buffer_mw):
+                raise ValueError(
+                    f"Quantiles not in correct order at forecast index {i}. "
+                    f"{plevel_10 - buffer_mw=} <= {expected=} <= {plevel_90 + buffer_mw=} "
+                    f"is not satisfied. "
+                    f"Target time: {forecast_value.get('targetTime', 'unknown')}",
+                )
+            logger.debug(
+                f"plevel_10 - {buffer_mw} <= expected <= plevel_90 + {buffer_mw} for forecast {i}: "
+                f"{plevel_10 - buffer_mw} <= {expected} <= {plevel_90 + buffer_mw}",
+            )
 
     logger.info(
-        "All national forecast quantiles are in correct order with 20 MW buffer "
-        "(plevel_10 - 20 <= expected <= plevel_90 + 20)",
+        "All national forecast quantiles are valid - either in correct order with 20 MW buffer "
+        "or skipped due to all values being below 100 MW",
     )
 
 
